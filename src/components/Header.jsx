@@ -12,7 +12,7 @@ export default function Header({ unit, setUnit, onDetectLocation, loadingGeo }) 
 
       <div className="header-controls">
         <div className="unit-toggle-group" role="group" aria-label="Temperature Unit Switcher">
-          <button 
+          <button
             type="button"
             className={`unit-btn ${unit === 'C' ? 'active' : ''}`}
             onClick={() => setUnit('C')}
@@ -20,7 +20,7 @@ export default function Header({ unit, setUnit, onDetectLocation, loadingGeo }) 
           >
             °C
           </button>
-          <button 
+          <button
             type="button"
             className={`unit-btn ${unit === 'F' ? 'active' : ''}`}
             onClick={() => setUnit('F')}
@@ -30,7 +30,7 @@ export default function Header({ unit, setUnit, onDetectLocation, loadingGeo }) 
           </button>
         </div>
 
-        <button 
+        <button
           type="button"
           className={`icon-action-btn ${loadingGeo ? 'loading' : ''}`}
           onClick={onDetectLocation}

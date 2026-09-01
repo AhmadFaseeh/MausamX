@@ -26,7 +26,9 @@ export default function RadarMap({ city, weatherData, toDisplayTemp, unit, onSel
 
     const map = L.map(mapContainerRef.current, {
       center: [initialLat, initialLon],
-      zoom: 8,
+      zoom: 3,
+      minZoom: 3,
+      maxZoom: 22,
       zoomControl: false
     });
 
@@ -103,17 +105,14 @@ export default function RadarMap({ city, weatherData, toDisplayTemp, unit, onSel
     let tileClassName = '';
 
     if (baseLayerType === 'dark') {
-      // 100% Free OpenStreetMap with high-end Dark Radar CSS filter (No API key, No watermark!)
       url = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
       attribution = '&copy; OpenStreetMap contributors';
       tileClassName = 'map-tiles-dark';
     } else if (baseLayerType === 'satellite') {
-      // Esri World Imagery (No API key, No watermark)
       url = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
       attribution = '&copy; Esri & Earthstar Geographics';
       tileClassName = 'map-tiles-satellite';
     } else {
-      // Standard Street
       url = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
       attribution = '&copy; OpenStreetMap contributors';
       tileClassName = '';
@@ -137,7 +136,8 @@ export default function RadarMap({ city, weatherData, toDisplayTemp, unit, onSel
     const lat = city.latitude;
     const lon = city.longitude;
 
-    map.setView([lat, lon], map.getZoom() || 8);
+    const targetZoom = Math.min(map.getZoom() || 6, 7);
+    map.setView([lat, lon], targetZoom);
 
     if (cityMarkerRef.current) {
       map.removeLayer(cityMarkerRef.current);
@@ -164,7 +164,7 @@ export default function RadarMap({ city, weatherData, toDisplayTemp, unit, onSel
     cityMarkerRef.current = marker;
   }, [city, weatherData, toDisplayTemp, unit]);
 
-  // --- Update Radar Frame Layer ---
+  // --- Update Radar Frame Layer (with maxNativeZoom to prevent 'Zoom level not supported') ---
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map || radarFrames.length === 0) return;
@@ -178,9 +178,14 @@ export default function RadarMap({ city, weatherData, toDisplayTemp, unit, onSel
 
     const radarUrl = `${radarHost}${frame.path}/256/{z}/{x}/{y}/2/1_1.png`;
 
+    // maxNativeZoom: 6 prevents RainViewer from ever returning "zoom level not supported" tiles!
     const layer = L.tileLayer(radarUrl, {
       opacity,
-      zIndex: 10
+      zIndex: 10,
+      tileSize: 256,
+      minZoom: 2,
+      maxNativeZoom: 6,
+      maxZoom: 18
     }).addTo(map);
 
     radarLayerRef.current = layer;
