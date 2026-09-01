@@ -46,9 +46,7 @@ export default function HeroWeather({
         <div className="hero-location">
           <div className="location-title-row">
             <h2 className="location-name">{city.name}</h2>
-            <span className="live-indicator">
-              <span className="live-dot" /> Live
-            </span>
+            
           </div>
           <div className="location-meta">
             <span>
