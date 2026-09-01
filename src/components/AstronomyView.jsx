@@ -1,8 +1,3 @@
-import React from 'react';
-
-/**
- * Astronomical Moon Phase & Illumination Calculator
- */
 function getMoonPhaseData(date = new Date()) {
   let year = date.getFullYear();
   let month = date.getMonth() + 1;

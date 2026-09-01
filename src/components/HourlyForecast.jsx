@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { getWeatherIcon } from '../utils/weatherIcons';
 
 export default function HourlyForecast({ hourly, currentTimeISO, toDisplayTemp }) {
@@ -6,25 +6,15 @@ export default function HourlyForecast({ hourly, currentTimeISO, toDisplayTemp }
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
 
-  if (!hourly || !hourly.time) return null;
-
-  let startIndex = 0;
-  for (let i = 0; i < hourly.time.length; i++) {
-    if (hourly.time[i] >= currentTimeISO) {
-      startIndex = i;
-      break;
-    }
-  }
-
-  const hoursToShow = hourly.time.slice(startIndex, startIndex + 24);
-
-  const checkScrollability = () => {
+  // Hook 1: scroll check callback
+  const checkScrollability = useCallback(() => {
     if (!trackRef.current) return;
     const { scrollLeft, scrollWidth, clientWidth } = trackRef.current;
     setCanScrollLeft(scrollLeft > 10);
     setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
-  };
+  }, []);
 
+  // Hook 2: attach listener (ALWAYS called at top level)
   useEffect(() => {
     const el = trackRef.current;
     if (el) {
@@ -32,7 +22,24 @@ export default function HourlyForecast({ hourly, currentTimeISO, toDisplayTemp }
       checkScrollability();
       return () => el.removeEventListener('scroll', checkScrollability);
     }
-  }, [hoursToShow]);
+  }, [checkScrollability, hourly]);
+
+  // Safe Guard: Check data AFTER all hooks
+  if (!hourly || !hourly.time || !Array.isArray(hourly.time)) {
+    return null;
+  }
+
+  let startIndex = 0;
+  if (currentTimeISO) {
+    for (let i = 0; i < hourly.time.length; i++) {
+      if (hourly.time[i] >= currentTimeISO) {
+        startIndex = i;
+        break;
+      }
+    }
+  }
+
+  const hoursToShow = hourly.time.slice(startIndex, startIndex + 24);
 
   const handleScroll = (direction) => {
     if (!trackRef.current) return;
@@ -93,22 +100,27 @@ export default function HourlyForecast({ hourly, currentTimeISO, toDisplayTemp }
         </div>
       </div>
 
-      {/* Relative Carousel Track with Floating Edge Indicators */}
+      {/* Relative Carousel Track */}
       <div className="hourly-carousel-wrapper">
         <div className="hourly-track" ref={trackRef}>
           {hoursToShow.map((isoTime, idx) => {
             const arrayIndex = startIndex + idx;
-            const temp = hourly.temperature_2m[arrayIndex];
-            const wCode = hourly.weather_code[arrayIndex];
+            const temp = hourly.temperature_2m?.[arrayIndex];
+            const wCode = hourly.weather_code?.[arrayIndex] ?? 0;
             const pop = hourly.precipitation_probability ? hourly.precipitation_probability[arrayIndex] : 0;
 
-            const hourNum = parseInt(isoTime.split('T')[1].split(':')[0], 10);
+            const timePart = isoTime.includes('T') ? isoTime.split('T')[1] : '';
+            const hourNum = parseInt(timePart.split(':')[0] || '12', 10);
             const hourIsDay = hourNum >= 6 && hourNum < 19 ? 1 : 0;
 
             let displayTime = 'Now';
             if (idx !== 0) {
-              const date = new Date(isoTime);
-              displayTime = date.toLocaleTimeString('en-US', { hour: 'numeric', hour12: true });
+              try {
+                const date = new Date(isoTime);
+                displayTime = date.toLocaleTimeString('en-US', { hour: 'numeric', hour12: true });
+              } catch {
+                displayTime = `${hourNum}:00`;
+              }
             }
 
             return (
